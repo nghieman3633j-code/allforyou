@@ -30,6 +30,11 @@ jobs:
       - name: Decode debug keystore
         run: base64 -d debug.keystore.base64 > debug.keystore
 
+      - name: Create env files for secrets plugin
+        run: |
+          printf 'GEMINI_API_KEY=MY_GEMINI_API_KEY\n' > .env.example
+          cp .env.example .env
+
       - name: Download Gradle 9.3.1 and build
         run: |
           curl -sL https://services.gradle.org/distributions/gradle-9.3.1-bin.zip -o /tmp/gradle.zip
