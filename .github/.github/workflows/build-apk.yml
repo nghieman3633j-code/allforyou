@@ -1,6 +1,5 @@
 name: بناء تطبيق العربية بتلمسان (APK)
 
-# يبني التطبيق تلقائيًا عند كل رفع، ويمكن تشغيله يدويًا أيضًا.
 on:
   push:
     branches: [ "main" ]
@@ -10,7 +9,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
-    # مسار المشروع داخل المستودع (المجلّد المتداخل)
     defaults:
       run:
         working-directory: dr-ali-krim-tlemcen/dr.-ali-krim-main
@@ -28,20 +26,23 @@ jobs:
       - name: تهيئة أدوات أندرويد (Android SDK)
         uses: android-actions/setup-android@v3
 
-      - name: تثبيت مكوّنات SDK المطلوبة (المنصّة 36 وأدوات البناء 36)
+      - name: تثبيت مكوّنات SDK المطلوبة
         run: |
           yes | sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0"
 
       - name: فكّ تشفير مفتاح التوقيع debug.keystore
         run: base64 -d debug.keystore.base64 > debug.keystore
 
-      - name: تهيئة Gradle 9.1.0
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: "9.3.1"
-
-      - name: بناء نسخة Debug القابلة للتثبيت
-        run: gradle assembleDebug --no-configuration-cache --stacktrace
+      - name: تنزيل Gradle 9.3.1 والبناء به مباشرةً
+        run: |
+          echo "== تنزيل Gradle 9.3.1 =="
+          curl -sL https://services.gradle.org/distributions/gradle-9.3.1-bin.zip -o /tmp/gradle.zip
+          unzip -q /tmp/gradle.zip -d "$HOME/gradle-dist"
+          GRADLE="$HOME/gradle-dist/gradle-9.3.1/bin/gradle"
+          echo "== إصدار Gradle المستعمَل =="
+          "$GRADLE" --version
+          echo "== بدء البناء =="
+          "$GRADLE" assembleDebug --no-configuration-cache --stacktrace
 
       - name: رفع ملف APK كأرشيف قابل للتنزيل
         uses: actions/upload-artifact@v4
