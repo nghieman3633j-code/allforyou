@@ -35,7 +35,7 @@ jobs:
       - name: فكّ تشفير مفتاح التوقيع debug.keystore
         run: base64 -d debug.keystore.base64 > debug.keystore
 
-      - name: تهيئة Gradle 9.1.0
+      - name: تهيئة Gradle 9.3.1
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "9.1.0"
