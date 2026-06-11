@@ -1,0 +1,51 @@
+name: بناء تطبيق العربية بتلمسان (APK)
+
+# يبني التطبيق تلقائيًا عند كل رفع، ويمكن تشغيله يدويًا أيضًا.
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    # مسار المشروع داخل المستودع (المجلّد المتداخل)
+    defaults:
+      run:
+        working-directory: dr-ali-krim-tlemcen/dr.-ali-krim-main
+
+    steps:
+      - name: جلب الكود من المستودع
+        uses: actions/checkout@v4
+
+      - name: تهيئة Java (JDK 17)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: تهيئة أدوات أندرويد (Android SDK)
+        uses: android-actions/setup-android@v3
+
+      - name: تثبيت مكوّنات SDK المطلوبة (المنصّة 36 وأدوات البناء 36)
+        run: |
+          yes | sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0"
+
+      - name: فكّ تشفير مفتاح التوقيع debug.keystore
+        run: base64 -d debug.keystore.base64 > debug.keystore
+
+      - name: تهيئة Gradle 9.1.0
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "9.1.0"
+
+      - name: بناء نسخة Debug القابلة للتثبيت
+        run: gradle assembleDebug --no-configuration-cache --stacktrace
+
+      - name: رفع ملف APK كأرشيف قابل للتنزيل
+        uses: actions/upload-artifact@v4
+        with:
+          name: arabic-tlemcen-apk
+          path: dr-ali-krim-tlemcen/dr.-ali-krim-main/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
