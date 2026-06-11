@@ -1,0 +1,6 @@
+{
+  "name": "العربية بتلمسان",
+  "description": "تطبيق تعليمي تفاعلي يستهدف تعليم اللغة العربية للطلبة الأجانب بقسم اللغة والأدب العربي بجامعة تلمسان الجزائر",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
