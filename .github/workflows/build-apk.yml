@@ -21,21 +21,21 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+     - name: Set up Android SDK
+      uses: android-actions/setup-android@v3
 
-      - name: Install SDK components
-        run: yes | sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0"
+    - name: Decode debug keystore
+      run: |
+        FILE_PATH=$(find . -name "debug.keystore.base64" -print -quit)
+        if [ -n "$FILE_PATH" ]; then
+          DIR_PATH=$(dirname "$FILE_PATH")
+          base64 -d "$FILE_PATH" > "$DIR_PATH/debug.keystore"
+        else
+          echo "الملف غير موجود، سيتم إنشاء مفتاح افتراضي"
+          keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+        fi
 
-      - name: Decode debug keystore
-        run: base64 -d debug.keystore.base64 > debug.keystore
-
-      - name: Create env files for secrets plugin
-        run: |
-          printf 'GEMINI_API_KEY=MY_GEMINI_API_KEY\n' > .env.example
-          cp .env.example .env
-
-      - name: Decode google-services.json (Firebase)
+    - name: Decode google-services.json (Firebase)
         run: echo "${{ secrets.GOOGLE_SERVICES_JSON }}" | base64 -d > app/google-services.json
 
       - name: Download Gradle 9.3.1 and build
