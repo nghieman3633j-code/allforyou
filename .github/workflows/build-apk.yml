@@ -46,29 +46,28 @@ jobs:
         run: |
           cd "firebase-update/dr-ali-krim-tlemcen/dr.-ali-krim-main"
           
-          # خطوة التطهير الجذري: حذف ملفات الإعدادات المتعارضة في المشروع وإعادة إنشائها نظيفة
+          # تنظيف جذري للملفات القديمة المتعارضة
           rm -f build.gradle.kts settings.gradle.kts app/build.gradle.kts
           
-          # 1. إنشاء ملف settings.gradle نظيف ومفتوح المستودعات
+          # 1. إنشاء ملف settings.gradle نظيف وموحد للمستودعات المركزية
           echo "pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }" > settings.gradle
-          echo "dependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS); repositories { google(); mavenCentral() } }" >> settings.gradle
+          echo "dependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.PRESERVE_SETTINGS); repositories { google(); mavenCentral() } }" >> settings.gradle
           echo "rootProject.name = 'arabic-tlemcen-apk'" >> settings.gradle
           echo "include ':app'" >> settings.gradle
           
-          # 2. إنشاء ملف build.gradle الرئيسي بالإصدار المستقر القياسي
-          echo "buildscript { repositories { google(); mavenCentral() }; dependencies { classpath 'com.android.tools.build:gradle:8.2.0'; classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.20' } }" > build.gradle
-          echo "allprojects { repositories { google(); mavenCentral() } }" >> build.gradle
+          # 2. إنشاء ملف build.gradle الرئيسي (نظيف تماماً وبدون تكرار المستودعات لتجنب الخطأ)
+          echo "buildscript { dependencies { classpath 'com.android.tools.build:gradle:8.2.0'; classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.20' } }" > build.gradle
           
-          # 3. إنشاء ملف بناء التطبيق الداخلي app/build.gradle ليعتمد على الإعدادات الموحدة
+          # 3. إنشاء ملف بناء التطبيق الداخلي app/build.gradle مع تفعيل مستودعات التجميع
           echo "apply plugin: 'com.android.application'" > app/build.gradle
           echo "apply plugin: 'org.jetbrains.kotlin.android'" >> app/build.gradle
           echo "android { compileSdk 34; defaultSetConfig { applicationId 'com.arabic.tlemcen.app'; minSdk 24; targetSdk 34; versionCode 1; versionName '1.0' } }" >> app/build.gradle
           
-          # تحميل أداة Gradle 8.2 المتوافقة تماماً
+          # تحميل أداة Gradle 8.2 المتوافقة
           curl -sL https://services.gradle.org/distributions/gradle-8.2-bin.zip -o /tmp/gradle.zip
           unzip -q /tmp/gradle.zip -d "$HOME/gd"
           
-          # بدء التجميع الحقيقي للتطبيق مع تجاوز الكاش القديم بالكامل لضمان الحجم الكامل
+          # التجميع الفعلي النظيف للتطبيق بالكامل
           "$HOME/gd/gradle-8.2/bin/gradle" clean
           "$HOME/gd/gradle-8.2/bin/gradle" assembleDebug --no-daemon --no-configuration-cache
 
