@@ -1,12 +1,4 @@
 plugins {
-    id("com.android.application")
-    id("org.jetbrains.kotlin.android")
-}
-
-// إعدادات بناء المشروع الفرعي الافتراضية
-subprojects {
-    repositories {
-        google()
-        mavenCentral()
-    }
+    id("com.android.application") version "8.2.0" apply false
+    id("org.jetbrains.kotlin.android") version "1.9.20" apply false
 }
