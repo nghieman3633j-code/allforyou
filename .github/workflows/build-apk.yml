@@ -1,4 +1,4 @@
-name: Build Arabic Tlemcen APK (Native)
+name: Build Arabic Tlemcen APK
 
 on:
   push:
@@ -13,28 +13,29 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. جلب الكود
+      # 1. جلب الكود المصدري للمشروع من جيتهاب
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. إعداد لغة جافا
+      # 2. إعداد بيئة جافا (مطلوبة لبناء تطبيقات أندرويد)
       - name: Set up JDK
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '17'
 
-      # 3. إعداد أداة Gradle وضبط صلاحيات تشغيل gradlew تلقائياً
-      - name: Setup Gradle and Fix Permissions
+      # 3. حل مشكلة الصلاحيات وموقع الملف تلقائياً
+      - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
 
-      # 4. بناء التطبيق باستخدام Gradle المباشر
+      # 4. بناء التطبيق مع تحديد المجلد الصحيح (android) الذي يحتوي على الـ gradlew
       - name: Build with Gradle
         run: ./gradlew assembleRelease
+        working-directory: android
 
-      # 5. حفظ ملف الـ APK الناتج
+      # 5. حفظ واستخراج ملف الـ APK بعد انتهاء البناء بنجاح
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: tlemcen-native-apk
-          path: app/build/outputs/apk/release/app-release.apk
+          name: tlemcen-app-release
+          path: android/app/build/outputs/apk/release/app-release.apk
