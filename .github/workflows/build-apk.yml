@@ -48,49 +48,163 @@ jobs:
           
           # تطهير وحذف المجلد الفرعي وملفات الكوتلن لإلغاء التشابك تماماً
           rm -rf build.gradle.kts settings.gradle.kts app/ gradle.properties
-          
-          # 1. إنشاء ملف settings.gradle القياسي المستقر
-          echo "pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }" > settings.gradle
-          echo "dependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS); repositories { google(); mavenCentral() } }" >> settings.gradle
-          echo "rootProject.name = 'arabic-tlemcen-apk'" >> settings.gradle
-          
-          # 2. إنشاء ملف gradle.properties وتفعيل خاصية AndroidX لحل المشكلة الحالية
-          echo "android.useAndroidX=true" > gradle.properties
-          echo "android.enableJetifier=true" >> gradle.properties
-          
-          # 3. بناء ملف التجميع الرئيسي مباشرة في جذر المشروع لرؤية الموارد فوراً
-          echo "apply plugin: 'com.android.application'" > build.gradle
-          echo "apply plugin: 'org.jetbrains.kotlin.android'" >> build.gradle
-          
-          echo "buildscript { repositories { google(); mavenCentral() }; dependencies { classpath 'com.android.tools.build:gradle:8.2.0'; classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.20' } }" >> build.gradle
-          
-          echo "android {" >> build.gradle
-          echo "    namespace 'com.arabic.tlemcen.app'" >> build.gradle
-          echo "    compileSdk 34" >> build.gradle
-          echo "    defaultConfig {" >> build.gradle
-          echo "        applicationId 'com.arabic.tlemcen.app'" >> build.gradle
-          echo "        minSdk 24" >> build.gradle
-          echo "        targetSdk 34" >> build.gradle
-          echo "        versionCode 1" >> build.gradle
-          echo "        versionName '1.0'" >> build.gradle
-          echo "    }" >> build.gradle
-          echo "    sourceSets {" >> build.gradle
-          echo "        main {" >> build.gradle
-          echo "            manifest.srcFile 'src/main/AndroidManifest.xml'" >> build.gradle
-          echo "            res.srcDirs = ['src/main/res']" >> build.gradle
-          echo "            assets.srcDirs = ['src/main/assets']" >> build.gradle
-          echo "            java.srcDirs = ['src/main/java', 'src/main/kotlin']" >> build.gradle
-          echo "        }" >> build.gradle
-          echo "    }" >> build.gradle
-          echo "}" >> build.gradle
-          
-          # تحميل أداة Gradle 8.2 المستقرة
+
+          # ─── 1. settings.gradle ───────────────────────────────────────────
+          cat > settings.gradle << 'SETTINGS'
+pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+rootProject.name = 'arabic-tlemcen-apk'
+SETTINGS
+
+          # ─── 2. gradle.properties ─────────────────────────────────────────
+          cat > gradle.properties << 'PROPS'
+android.useAndroidX=true
+android.enableJetifier=true
+PROPS
+
+          # ─── 3. build.gradle ──────────────────────────────────────────────
+          cat > build.gradle << 'GRADLE'
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:8.2.0'
+        classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.20'
+    }
+}
+
+apply plugin: 'com.android.application'
+apply plugin: 'org.jetbrains.kotlin.android'
+
+android {
+    namespace 'com.arabic.tlemcen.app'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId 'com.arabic.tlemcen.app'
+        minSdk 24
+        targetSdk 34
+        versionCode 1
+        versionName '1.0'
+    }
+
+    sourceSets {
+        main {
+            manifest.srcFile 'src/main/AndroidManifest.xml'
+            res.srcDirs     = ['src/main/res']
+            assets.srcDirs  = ['src/main/assets']
+            java.srcDirs    = ['src/main/java', 'src/main/kotlin']
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = '17'
+    }
+}
+
+dependencies {
+    implementation 'androidx.core:core-ktx:1.12.0'
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+}
+GRADLE
+
+          # ─── 4. هيكل المجلدات الأساسية ───────────────────────────────────
+          mkdir -p src/main/java/com/arabic/tlemcen/app
+          mkdir -p src/main/res/values
+          mkdir -p src/main/res/layout
+          mkdir -p src/main/assets
+
+          # ─── 5. AndroidManifest.xml ───────────────────────────────────────
+          cat > src/main/AndroidManifest.xml << 'MANIFEST'
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application
+        android:allowBackup="true"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.AppCompat.Light.NoActionBar">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+    </application>
+
+</manifest>
+MANIFEST
+
+          # ─── 6. MainActivity.kt ───────────────────────────────────────────
+          cat > src/main/java/com/arabic/tlemcen/app/MainActivity.kt << 'KOTLIN'
+package com.arabic.tlemcen.app
+
+import androidx.appcompat.app.AppCompatActivity
+import android.os.Bundle
+
+class MainActivity : AppCompatActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+    }
+}
+KOTLIN
+
+          # ─── 7. activity_main.xml ─────────────────────────────────────────
+          cat > src/main/res/layout/activity_main.xml << 'LAYOUT'
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:gravity="center"
+    android:orientation="vertical">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/app_name"
+        android:textSize="24sp" />
+
+</LinearLayout>
+LAYOUT
+
+          # ─── 8. strings.xml ───────────────────────────────────────────────
+          cat > src/main/res/values/strings.xml << 'STRINGS'
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Arabic Tlemcen</string>
+</resources>
+STRINGS
+
+          # ─── 9. تحميل Gradle وتشغيل البناء ──────────────────────────────
           curl -sL https://services.gradle.org/distributions/gradle-8.2-bin.zip -o /tmp/gradle.zip
           unzip -q /tmp/gradle.zip -d "$HOME/gd"
-          
-          # إطلاق البناء النهائي وتجميع التطبيق الحقيقي بالكامل
+
           "$HOME/gd/gradle-8.2/bin/gradle" clean
-          "$HOME/gd/gradle-8.2/bin/gradle" assembleDebug --no-daemon --no-configuration-cache
+          "$HOME/gd/gradle-8.2/bin/gradle" assembleDebug --no-daemon --no-configuration-cache --stacktrace
 
       - name: Upload Real APK
         uses: actions/upload-artifact@v4
