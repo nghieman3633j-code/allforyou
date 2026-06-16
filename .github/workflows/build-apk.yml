@@ -42,24 +42,16 @@ jobs:
           mkdir -p "$TARGET_DIR"
           echo "${{ secrets.GOOGLE_SERVICES_JSON }}" | base64 -d > "$TARGET_DIR/google-services.json"
 
-      - name: Download Gradle and build real APK
+      - name: Download Gradle and build Full APK
         run: |
           cd "firebase-update/dr-ali-krim-tlemcen/dr.-ali-krim-main"
           
-          # استبدال رقم إصدار الإضافة المتعارض (9.1.1) بإصدار مستقر ومتوفر (8.2.0) لتوليد الحجم الكامل
-          if [ -f "build.gradle.kts" ]; then
-            sed -i "s/version \"9.1.1\"/version \"8.2.0\"/g" build.gradle.kts
-          fi
-          if [ -f "app/build.gradle.kts" ]; then
-            sed -i "s/version \"9.1.1\"/version \"8.2.0\"/g" app/build.gradle.kts
-          fi
-
-          # تحميل أداة Gradle المستقرة
-          curl -sL https://services.gradle.org/distributions/gradle-8.5-bin.zip -o /tmp/gradle.zip
+          # تحميل أداة Gradle 8.2 المتوافقة مع الإصدار المستقر للمشروع
+          curl -sL https://services.gradle.org/distributions/gradle-8.2-bin.zip -o /tmp/gradle.zip
           unzip -q /tmp/gradle.zip -d "$HOME/gd"
           
-          # تشغيل البناء الفعلي الكامل والتجميع الحقيقي للأكواد
-          "$HOME/gd/gradle-8.5/bin/gradle" assembleDebug --no-configuration-cache --stacktrace
+          # تشغيل تجميع حزمة الأندرويد الحقيقية مع تخطي التحقق من الكاش المؤقت لضمان الحجم الكامل
+          "$HOME/gd/gradle-8.2/bin/gradle" assembleDebug --no-daemon --no-configuration-cache --stacktrace
 
       - name: Upload Real APK
         uses: actions/upload-artifact@v4
