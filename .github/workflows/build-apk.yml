@@ -46,15 +46,19 @@ jobs:
         run: |
           cd "firebase-update/dr-ali-krim-tlemcen/dr.-ali-krim-main"
           
-          # استبدال دقيق جداً: تعديل إضافة أندرويد فقط وإجبار الـ Kotlin على الإصدار المستقر الصحيح
+          # فرض إصدار الأندرويد 8.2.0 جبرياً برمجياً على الملف الخارجي والملف الداخلي معاً لمنع تداخل الإصدارات
           find . -name "*.kts" -exec sed -i 's/id("com.android.application") version "[0-9.]*"/id("com.android.application") version "8.2.0"/g' {} +
+          find . -name "*.kts" -exec sed -i 's/id("com.android.application")$/id("com.android.application") version "8.2.0"/g' {} +
+          
+          # الحفاظ على استقرار الكوتلن 
           find . -name "*.kts" -exec sed -i 's/id("org.jetbrains.kotlin.android") version "[0-9.]*"/id("org.jetbrains.kotlin.android") version "1.9.20"/g' {} +
+          find . -name "*.kts" -exec sed -i 's/id("org.jetbrains.kotlin.android")$/id("org.jetbrains.kotlin.android") version "1.9.20"/g' {} +
           
           # تحميل أداة Gradle 8.2 المتوافقة
           curl -sL https://services.gradle.org/distributions/gradle-8.2-bin.zip -o /tmp/gradle.zip
           unzip -q /tmp/gradle.zip -d "$HOME/gd"
           
-          # تنظيف وبدء التجميع الحقيقي الشامل للتطبيق
+          # تنظيف وبدء تجميع الحزمة الحقيقية الكاملة للمشروع رغماً عن الإعدادات القديمة
           "$HOME/gd/gradle-8.2/bin/gradle" clean
           "$HOME/gd/gradle-8.2/bin/gradle" assembleDebug --no-daemon --no-configuration-cache
 
