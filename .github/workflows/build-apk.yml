@@ -38,7 +38,8 @@ jobs:
 
       - name: Decode google-services.json (Firebase)
         run: |
-          TARGET_DIR="firebase-update/dr-ali-krim-tlemcen/dr.-ali-krim-main/app"
+          # حقن ملف الفايربيز مباشرة في مكان الموارد المتوقع
+          TARGET_DIR="firebase-update/dr-ali-krim-tlemcen/dr.-ali-krim-main"
           mkdir -p "$TARGET_DIR"
           echo "${{ secrets.GOOGLE_SERVICES_JSON }}" | base64 -d > "$TARGET_DIR/google-services.json"
 
@@ -46,46 +47,45 @@ jobs:
         run: |
           cd "firebase-update/dr-ali-krim-tlemcen/dr.-ali-krim-main"
           
-          # تنظيف كامل للملفات المؤقتة المتعارضة
-          rm -f build.gradle.kts settings.gradle.kts app/build.gradle.kts app/build.gradle
+          # 1. تطهير وحذف المجلد الفرعي 'app' وملفات الكوتلن لإلغاء التشابك كلياً
+          rm -rf build.gradle.kts settings.gradle.kts app/
           
-          # 1. إنشاء ملف settings.gradle القياسي المستقر
+          # 2. إنشاء ملف settings.gradle مسطح (بدون إدراج مجلد فرعي)
           echo "pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }" > settings.gradle
           echo "dependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS); repositories { google(); mavenCentral() } }" >> settings.gradle
           echo "rootProject.name = 'arabic-tlemcen-apk'" >> settings.gradle
-          echo "include ':app'" >> settings.gradle
           
-          # 2. إنشاء ملف build.gradle الرئيسي
-          echo "buildscript { repositories { google(); mavenCentral() }; dependencies { classpath 'com.android.tools.build:gradle:8.2.0'; classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.20' } }" > build.gradle
+          # 3. بناء ملف التجميع الرئيسي مباشرة في جذر المشروع لرؤية الموارد فوراً
+          echo "apply plugin: 'com.android.application'" > build.gradle
+          echo "apply plugin: 'org.jetbrains.kotlin.android'" >> build.gradle
           
-          # 3. إنشاء ملف بناء التطبيق الداخلي app/build.gradle مع تصحيح الرؤية العكسية للمجلدات (../)
-          echo "apply plugin: 'com.android.application'" > app/build.gradle
-          echo "apply plugin: 'org.jetbrains.kotlin.android'" >> app/build.gradle
-          echo "android {" >> app/build.gradle
-          echo "    namespace 'com.arabic.tlemcen.app'" >> app/build.gradle
-          echo "    compileSdk 34" >> app/build.gradle
-          echo "    defaultConfig {" >> app/build.gradle
-          echo "        applicationId 'com.arabic.tlemcen.app'" >> app/build.gradle
-          echo "        minSdk 24" >> app/build.gradle
-          echo "        targetSdk 34" >> app/build.gradle
-          echo "        versionCode 1" >> app/build.gradle
-          echo "        versionName '1.0'" >> app/build.gradle
-          echo "    }" >> app/build.gradle
-          echo "    sourceSets {" >> app/build.gradle
-          echo "        main {" >> app/build.gradle
-          echo "            manifest.srcFile 'src/main/AndroidManifest.xml'" >> app/build.gradle
-          echo "            res.srcDirs = ['../app/src/main/res', 'src/main/res']" >> app/build.gradle
-          echo "            assets.srcDirs = ['../app/src/main/assets', 'src/main/assets']" >> app/build.gradle
-          echo "            java.srcDirs = ['../app/src/main/java', 'src/main/java']" >> app/build.gradle
-          echo "        }" >> app/build.gradle
-          echo "    }" >> app/build.gradle
-          echo "}" >> app/build.gradle
+          echo "buildscript { repositories { google(); mavenCentral() }; dependencies { classpath 'com.android.tools.build:gradle:8.2.0'; classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.20' } }" >> build.gradle
+          
+          echo "android {" >> build.gradle
+          echo "    namespace 'com.arabic.tlemcen.app'" >> build.gradle
+          echo "    compileSdk 34" >> build.gradle
+          echo "    defaultConfig {" >> build.gradle
+          echo "        applicationId 'com.arabic.tlemcen.app'" >> build.gradle
+          echo "        minSdk 24" >> build.gradle
+          echo "        targetSdk 34" >> build.gradle
+          echo "        versionCode 1" >> build.gradle
+          echo "        versionName '1.0'" >> build.gradle
+          echo "    }" >> build.gradle
+          echo "    sourceSets {" >> build.gradle
+          echo "        main {" >> build.gradle
+          echo "            manifest.srcFile 'src/main/AndroidManifest.xml'" >> build.gradle
+          echo "            res.srcDirs = ['src/main/res']" >> build.gradle
+          echo "            assets.srcDirs = ['src/main/assets']" >> build.gradle
+          echo "            java.srcDirs = ['src/main/java', 'src/main/kotlin']" >> build.gradle
+          echo "        }" >> build.gradle
+          echo "    }" >> build.gradle
+          echo "}" >> build.gradle
           
           # تحميل أداة Gradle 8.2 المستقرة
           curl -sL https://services.gradle.org/distributions/gradle-8.2-bin.zip -o /tmp/gradle.zip
           unzip -q /tmp/gradle.zip -d "$HOME/gd"
           
-          # إطلاق البناء النهائي وتجميع التطبيق الحقيقي بالكامل
+          # تشغيل التجميع المسطح النظيف
           "$HOME/gd/gradle-8.2/bin/gradle" clean
           "$HOME/gd/gradle-8.2/bin/gradle" assembleDebug --no-daemon --no-configuration-cache
 
@@ -93,5 +93,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: arabic-tlemcen-apk
-          path: "**/build/outputs/apk/debug/*.apk"
+          path: "**/outputs/apk/debug/*.apk"
           if-no-files-found: error
