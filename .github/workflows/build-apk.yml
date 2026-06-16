@@ -1,1 +1,97 @@
+name: Build Arabic Tlemcen APK
 
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install SDK components
+        run: |
+          yes | sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+
+      - name: Decode debug keystore
+        run: |
+          TARGET_DIR="firebase-update/dr-ali-krim-tlemcen/dr.-ali-krim-main"
+          if [ -f "$TARGET_DIR/debug.keystore.base64" ]; then
+            base64 -d "$TARGET_DIR/debug.keystore.base64" > "$TARGET_DIR/debug.keystore"
+          else
+            echo "Ø§Ù„Ù…ÙØªØ§Ø­ ØºÙŠØ± Ù…ÙˆØ¬ÙˆØ¯ØŒ Ø³ÙŠØªÙ… Ø¥Ù†Ø´Ø§Ø¡ Ù…ÙØªØ§Ø­ Ø§ÙØªØ±Ø§Ø¶ÙŠ"
+            keytool -genkey -v -keystore "$TARGET_DIR/debug.keystore" -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+          fi
+
+      - name: Decode google-services.json (Firebase)
+        run: |
+          # Ø­Ù‚Ù† Ù…Ù„Ù Ø§Ù„ÙØ§ÙŠØ±Ø¨ÙŠØ² Ù…Ø¨Ø§Ø´Ø±Ø© ÙÙŠ Ù…ÙƒØ§Ù† Ø§Ù„Ù…ÙˆØ§Ø±Ø¯ Ø§Ù„Ù…ØªÙˆÙ‚Ø¹
+          TARGET_DIR="firebase-update/dr-ali-krim-tlemcen/dr.-ali-krim-main"
+          mkdir -p "$TARGET_DIR"
+          echo "${{ secrets.GOOGLE_SERVICES_JSON }}" | base64 -d > "$TARGET_DIR/google-services.json"
+
+      - name: Download Gradle and build Full APK
+        run: |
+          cd "firebase-update/dr-ali-krim-tlemcen/dr.-ali-krim-main"
+          
+          # 1. ØªØ·Ù‡ÙŠØ± ÙˆØ­Ø°Ù Ø§Ù„Ù…Ø¬Ù„Ø¯ Ø§Ù„ÙØ±Ø¹ÙŠ 'app' ÙˆÙ…Ù„ÙØ§Øª Ø§Ù„ÙƒÙˆØªÙ„Ù† Ù„Ø¥Ù„ØºØ§Ø¡ Ø§Ù„ØªØ´Ø§Ø¨Ùƒ ÙƒÙ„ÙŠØ§Ù‹
+          rm -rf build.gradle.kts settings.gradle.kts app/
+          
+          # 2. Ø¥Ù†Ø´Ø§Ø¡ Ù…Ù„Ù settings.gradle Ù…Ø³Ø·Ø­ (Ø¨Ø¯ÙˆÙ† Ø¥Ø¯Ø±Ø§Ø¬ Ù…Ø¬Ù„Ø¯ ÙØ±Ø¹ÙŠ)
+          echo "pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }" > settings.gradle
+          echo "dependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS); repositories { google(); mavenCentral() } }" >> settings.gradle
+          echo "rootProject.name = 'arabic-tlemcen-apk'" >> settings.gradle
+          
+          # 3. Ø¨Ù†Ø§Ø¡ Ù…Ù„Ù Ø§Ù„ØªØ¬Ù…ÙŠØ¹ Ø§Ù„Ø±Ø¦ÙŠØ³ÙŠ Ù…Ø¨Ø§Ø´Ø±Ø© ÙÙŠ Ø¬Ø°Ø± Ø§Ù„Ù…Ø´Ø±ÙˆØ¹ Ù„Ø±Ø¤ÙŠØ© Ø§Ù„Ù…ÙˆØ§Ø±Ø¯ ÙÙˆØ±Ø§Ù‹
+          echo "apply plugin: 'com.android.application'" > build.gradle
+          echo "apply plugin: 'org.jetbrains.kotlin.android'" >> build.gradle
+          
+          echo "buildscript { repositories { google(); mavenCentral() }; dependencies { classpath 'com.android.tools.build:gradle:8.2.0'; classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.20' } }" >> build.gradle
+          
+          echo "android {" >> build.gradle
+          echo "    namespace 'com.arabic.tlemcen.app'" >> build.gradle
+          echo "    compileSdk 34" >> build.gradle
+          echo "    defaultConfig {" >> build.gradle
+          echo "        applicationId 'com.arabic.tlemcen.app'" >> build.gradle
+          echo "        minSdk 24" >> build.gradle
+          echo "        targetSdk 34" >> build.gradle
+          echo "        versionCode 1" >> build.gradle
+          echo "        versionName '1.0'" >> build.gradle
+          echo "    }" >> build.gradle
+          echo "    sourceSets {" >> build.gradle
+          echo "        main {" >> build.gradle
+          echo "            manifest.srcFile 'src/main/AndroidManifest.xml'" >> build.gradle
+          echo "            res.srcDirs = ['src/main/res']" >> build.gradle
+          echo "            assets.srcDirs = ['src/main/assets']" >> build.gradle
+          echo "            java.srcDirs = ['src/main/java', 'src/main/kotlin']" >> build.gradle
+          echo "        }" >> build.gradle
+          echo "    }" >> build.gradle
+          echo "}" >> build.gradle
+          
+          # ØªØ­Ù…ÙŠÙ„ Ø£Ø¯Ø§Ø© Gradle 8.2 Ø§Ù„Ù…Ø³ØªÙ‚Ø±Ø©
+          curl -sL https://services.gradle.org/distributions/gradle-8.2-bin.zip -o /tmp/gradle.zip
+          unzip -q /tmp/gradle.zip -d "$HOME/gd"
+          
+          # ØªØ´ØºÙŠÙ„ Ø§Ù„ØªØ¬Ù…ÙŠØ¹ Ø§Ù„Ù…Ø³Ø·Ø­ Ø§Ù„Ù†Ø¸ÙŠÙ
+          "$HOME/gd/gradle-8.2/bin/gradle" clean
+          "$HOME/gd/gradle-8.2/bin/gradle" assembleDebug --no-daemon --no-configuration-cache
+
+      - name: Upload Real APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: arabic-tlemcen-apk
+          path: "**/outputs/apk/debug/*.apk"
+          if-no-files-found: error
