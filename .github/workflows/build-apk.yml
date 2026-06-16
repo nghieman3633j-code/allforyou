@@ -46,28 +46,28 @@ jobs:
         run: |
           cd "firebase-update/dr-ali-krim-tlemcen/dr.-ali-krim-main"
           
-          # مسح كامل وجذري لملفات الكوتلن والإعدادات القديمة المتعارضة لتهيئة بناء نظيف
+          # مسح الملفات القديمة المتعارضة لتهيئة بناء نظيف
           rm -f build.gradle.kts settings.gradle.kts app/build.gradle.kts
           
-          # 1. إنشاء ملف settings.gradle بالنمط القياسي الصحيح والمستقر
+          # 1. إنشاء ملف settings.gradle المستقر
           echo "pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }" > settings.gradle
           echo "dependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS); repositories { google(); mavenCentral() } }" >> settings.gradle
           echo "rootProject.name = 'arabic-tlemcen-apk'" >> settings.gradle
           echo "include ':app'" >> settings.gradle
           
-          # 2. إنشاء ملف build.gradle الرئيسي النظيف والمتوافق مع بيئة الـ Groovy
-          echo "buildscript { dependencies { classpath 'com.android.tools.build:gradle:8.2.0'; classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.20' } }" > build.gradle
+          # 2. إنشاء ملف build.gradle الرئيسي (مع إضافة المستودعات داخل buildscript لحل المشكلة الحالية)
+          echo "buildscript { repositories { google(); mavenCentral() }; dependencies { classpath 'com.android.tools.build:gradle:8.2.0'; classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.20' } }" > build.gradle
           
-          # 3. إنشاء ملف بناء التطبيق الداخلي app/build.gradle بإعدادات الأندرويد الصارمة والحديثة
+          # 3. إنشاء ملف بناء التطبيق الداخلي app/build.gradle
           echo "apply plugin: 'com.android.application'" > app/build.gradle
           echo "apply plugin: 'org.jetbrains.kotlin.android'" >> app/build.gradle
           echo "android { compileSdk 34; defaultConfig { applicationId 'com.arabic.tlemcen.app'; minSdk 24; targetSdk 34; versionCode 1; versionName '1.0' } }" >> app/build.gradle
           
-          # تحميل أداة Gradle 8.2 المتوافقة بالكامل
+          # تحميل أداة Gradle 8.2 المتوافقة
           curl -sL https://services.gradle.org/distributions/gradle-8.2-bin.zip -o /tmp/gradle.zip
           unzip -q /tmp/gradle.zip -d "$HOME/gd"
           
-          # بدء التجميع الفعلي النظيف والكامل لتوليد الـ APK الحقيقي
+          # بدء التجميع الفعلي الكامل لتوليد الـ APK الحقيقي
           "$HOME/gd/gradle-8.2/bin/gradle" clean
           "$HOME/gd/gradle-8.2/bin/gradle" assembleDebug --no-daemon --no-configuration-cache
 
