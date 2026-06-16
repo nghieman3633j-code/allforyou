@@ -46,19 +46,19 @@ jobs:
         run: |
           cd "firebase-update/dr-ali-krim-tlemcen/dr.-ali-krim-main"
           
-          # تنظيف كامل للملفات القديمة المتعارضة
+          # تنظيف جذري لملفات التكوين المتعارضة
           rm -f build.gradle.kts settings.gradle.kts app/build.gradle.kts app/build.gradle
           
-          # 1. إنشاء ملف settings.gradle المستقر
+          # 1. إعادة إنشاء ملف settings.gradle القياسي
           echo "pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }" > settings.gradle
           echo "dependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS); repositories { google(); mavenCentral() } }" >> settings.gradle
           echo "rootProject.name = 'arabic-tlemcen-apk'" >> settings.gradle
           echo "include ':app'" >> settings.gradle
           
-          # 2. إنشاء ملف build.gradle الرئيسي
+          # 2. إنشاء ملف build.gradle الرئيسي الموجه للمستودعات المركزية
           echo "buildscript { repositories { google(); mavenCentral() }; dependencies { classpath 'com.android.tools.build:gradle:8.2.0'; classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.20' } }" > build.gradle
           
-          # 3. إنشاء ملف بناء التطبيق الداخلي app/build.gradle (مع توجيه مسارات الموارد الحقيقية بدقة)
+          # 3. إنشاء ملف بناء التطبيق الداخلي app/build.gradle مع تحديد مسارات الموارد المطلقة بدقة (تم تصحيح المسارات)
           echo "apply plugin: 'com.android.application'" > app/build.gradle
           echo "apply plugin: 'org.jetbrains.kotlin.android'" >> app/build.gradle
           echo "android {" >> app/build.gradle
@@ -73,10 +73,10 @@ jobs:
           echo "    }" >> app/build.gradle
           echo "    sourceSets {" >> app/build.gradle
           echo "        main {" >> app/build.gradle
-          echo "            manifest.srcFile 'src/main/AndroidManifest.xml'" >> app/build.gradle
-          echo "            res.srcDirs = ['src/main/res']" >> app/build.gradle
-          echo "            assets.srcDirs = ['src/main/assets']" >> app/build.gradle
-          echo "            java.srcDirs = ['src/main/java', 'src/main/kotlin']" >> app/build.gradle
+          echo "            manifest.srcFile 'app/src/main/AndroidManifest.xml'" >> app/build.gradle
+          echo "            res.srcDirs = ['app/src/main/res']" >> app/build.gradle
+          echo "            assets.srcDirs = ['app/src/main/assets']" >> app/build.gradle
+          echo "            java.srcDirs = ['app/src/main/java', 'app/src/main/kotlin']" >> app/build.gradle
           echo "        }" >> app/build.gradle
           echo "    }" >> app/build.gradle
           echo "}" >> app/build.gradle
@@ -85,7 +85,7 @@ jobs:
           curl -sL https://services.gradle.org/distributions/gradle-8.2-bin.zip -o /tmp/gradle.zip
           unzip -q /tmp/gradle.zip -d "$HOME/gd"
           
-          # إطلاق البناء النهائي الشامل لتجميع الملفات المستهدفة وحقن الأيقونات الجديدة
+          # إطلاق عملية التجميع والربط الشاملة للأيقونات المحدثة وكود الواجهة
           "$HOME/gd/gradle-8.2/bin/gradle" clean
           "$HOME/gd/gradle-8.2/bin/gradle" assembleDebug --no-daemon --no-configuration-cache
 
@@ -95,3 +95,4 @@ jobs:
           name: arabic-tlemcen-apk
           path: "**/build/outputs/apk/debug/*.apk"
           if-no-files-found: error
+          
