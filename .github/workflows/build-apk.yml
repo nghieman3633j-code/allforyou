@@ -46,11 +46,16 @@ jobs:
         run: |
           cd "firebase-update/dr-ali-krim-tlemcen/dr.-ali-krim-main"
           
-          # تحميل أداة Gradle 8.2 المتوافقة مع الإصدار المستقر للمشروع
+          # توحيد وتنظيف كافة إصدارات المكونات في جميع الملفات لمنع تعارض الـ Classpath
+          find . -name "build.gradle.kts" -exec sed -i 's/version "[0-9.]*"/version "8.2.0"/g' {} +
+          find . -name "build.gradle" -exec sed -i 's/version "[0-9.]*"/version "8.2.0"/g' {} +
+          
+          # تحميل أداة Gradle 8.2 المتوافقة
           curl -sL https://services.gradle.org/distributions/gradle-8.2-bin.zip -o /tmp/gradle.zip
           unzip -q /tmp/gradle.zip -d "$HOME/gd"
           
-          # تشغيل تجميع حزمة الأندرويد الحقيقية مع تخطي التحقق من الكاش المؤقت لضمان الحجم الكامل
+          # تنظيف الكاش المحلي وتجميع الحزمة الحقيقية الكاملة
+          "$HOME/gd/gradle-8.2/bin/gradle" clean
           "$HOME/gd/gradle-8.2/bin/gradle" assembleDebug --no-daemon --no-configuration-cache --stacktrace
 
       - name: Upload Real APK
