@@ -8,11 +8,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        # ✅ المجلد الصحيح — تصحيح الخطأ الرئيسي (كان: working-directory: .)
-        working-directory: dr-ali-krim-tlemcen/dr.-ali-krim-main
-
+    
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -27,7 +23,8 @@ jobs:
         uses: android-actions/setup-android@v3
 
       - name: Install SDK components
-        run: yes | sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0"
+        run: |
+          yes | sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0"
 
       - name: Decode debug keystore
         run: |
@@ -35,31 +32,20 @@ jobs:
           if [ -n "$FILE_PATH" ]; then
             DIR_PATH=$(dirname "$FILE_PATH")
             base64 -d "$FILE_PATH" > "$DIR_PATH/debug.keystore"
-            echo "✅ تم فك ترميز debug.keystore من $FILE_PATH"
           else
-            echo "⚠️ الملف debug.keystore.base64 غير موجود، إنشاء مفتاح افتراضي..."
-            keytool -genkey -v \
-              -keystore debug.keystore \
-              -storepass android \
-              -alias androiddebugkey \
-              -keypass android \
-              -keyalg RSA \
-              -keysize 2048 \
-              -validity 10000 \
-              -dname "CN=Android Debug,O=Android,C=US"
+            echo "الملف غير موجود، سيتم إنشاء مفتاح افتراضي"
+            keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
           fi
-
-      - name: Create env files for secrets plugin
-        run: |
-          printf 'GEMINI_API_KEY=MY_GEMINI_API_KEY\n' > .env.example
-          cp .env.example .env
 
       - name: Decode google-services.json (Firebase)
         run: |
-          # ✅ التأكد من وجود مجلد app/ قبل الكتابة
-          mkdir -p app
-          echo "${{ secrets.GOOGLE_SERVICES_JSON }}" | base64 -d > app/google-services.json
-          echo "✅ تم إنشاء app/google-services.json"
+          TARGET_DIR=$(find . -type d -name "app" -not -path "*/build/*" -print -quit)
+          if [ -n "$TARGET_DIR" ]; then
+            echo "${{ secrets.GOOGLE_SERVICES_JSON }}" | base64 -d > "$TARGET_DIR/google-services.json"
+          else
+            mkdir -p app
+            echo "${{ secrets.GOOGLE_SERVICES_JSON }}" | base64 -d > app/google-services.json
+          fi
 
       - name: Download Gradle 9.3.1 and build
         run: |
@@ -72,5 +58,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: arabic-tlemcen-apk
-          path: dr-ali-krim-tlemcen/dr.-ali-krim-main/app/build/outputs/apk/debug/*.apk
+          path: "**/build/outputs/apk/debug/*.apk"
           if-no-files-found: error
