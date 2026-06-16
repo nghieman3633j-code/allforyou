@@ -55,19 +55,29 @@ jobs:
           echo "rootProject.name = 'arabic-tlemcen-apk'" >> settings.gradle
           echo "include ':app'" >> settings.gradle
           
-          # 2. إنشاء ملف build.gradle الرئيسي (مع إضافة المستودعات داخل buildscript لحل المشكلة الحالية)
+          # 2. إنشاء ملف build.gradle الرئيسي
           echo "buildscript { repositories { google(); mavenCentral() }; dependencies { classpath 'com.android.tools.build:gradle:8.2.0'; classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.20' } }" > build.gradle
           
-          # 3. إنشاء ملف بناء التطبيق الداخلي app/build.gradle
+          # 3. إنشاء ملف بناء التطبيق الداخلي app/build.gradle (مع إضافة الـ namespace الاجباري لحل المشكلة)
           echo "apply plugin: 'com.android.application'" > app/build.gradle
           echo "apply plugin: 'org.jetbrains.kotlin.android'" >> app/build.gradle
-          echo "android { compileSdk 34; defaultConfig { applicationId 'com.arabic.tlemcen.app'; minSdk 24; targetSdk 34; versionCode 1; versionName '1.0' } }" >> app/build.gradle
+          echo "android {" > app/build.gradle
+          echo "    namespace 'com.arabic.tlemcen.app'" >> app/build.gradle
+          echo "    compileSdk 34" >> app/build.gradle
+          echo "    defaultConfig {" >> app/build.gradle
+          echo "        applicationId 'com.arabic.tlemcen.app'" >> app/build.gradle
+          echo "        minSdk 24" >> app/build.gradle
+          echo "        targetSdk 34" >> app/build.gradle
+          echo "        versionCode 1" >> app/build.gradle
+          echo "        versionName '1.0'" >> app/build.gradle
+          echo "    }" >> app/build.gradle
+          echo "}" >> app/build.gradle
           
           # تحميل أداة Gradle 8.2 المتوافقة
           curl -sL https://services.gradle.org/distributions/gradle-8.2-bin.zip -o /tmp/gradle.zip
           unzip -q /tmp/gradle.zip -d "$HOME/gd"
           
-          # بدء التجميع الفعلي الكامل لتوليد الـ APK الحقيقي
+          # بدء التجميع الفعلي الشامل للأكواد والواجهة الجديدة
           "$HOME/gd/gradle-8.2/bin/gradle" clean
           "$HOME/gd/gradle-8.2/bin/gradle" assembleDebug --no-daemon --no-configuration-cache
 
