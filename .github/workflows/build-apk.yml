@@ -46,7 +46,7 @@ jobs:
         run: |
           cd "firebase-update/dr-ali-krim-tlemcen/dr.-ali-krim-main"
           
-          # تنظيف كامل للملفات القديمة المتعارضة لتهيئة بناء نظيف
+          # تنظيف كامل للملفات القديمة المتعارضة
           rm -f build.gradle.kts settings.gradle.kts app/build.gradle.kts app/build.gradle
           
           # 1. إنشاء ملف settings.gradle المستقر
@@ -58,7 +58,7 @@ jobs:
           # 2. إنشاء ملف build.gradle الرئيسي
           echo "buildscript { repositories { google(); mavenCentral() }; dependencies { classpath 'com.android.tools.build:gradle:8.2.0'; classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.20' } }" > build.gradle
           
-          # 3. إنشاء ملف بناء التطبيق الداخلي app/build.gradle بالشكل الصحيح تتابعياً (تم تصحيح علامات الإضافة >>)
+          # 3. إنشاء ملف بناء التطبيق الداخلي app/build.gradle (مع توجيه مسارات الموارد الحقيقية بدقة)
           echo "apply plugin: 'com.android.application'" > app/build.gradle
           echo "apply plugin: 'org.jetbrains.kotlin.android'" >> app/build.gradle
           echo "android {" >> app/build.gradle
@@ -71,13 +71,21 @@ jobs:
           echo "        versionCode 1" >> app/build.gradle
           echo "        versionName '1.0'" >> app/build.gradle
           echo "    }" >> app/build.gradle
+          echo "    sourceSets {" >> app/build.gradle
+          echo "        main {" >> app/build.gradle
+          echo "            manifest.srcFile 'src/main/AndroidManifest.xml'" >> app/build.gradle
+          echo "            res.srcDirs = ['src/main/res']" >> app/build.gradle
+          echo "            assets.srcDirs = ['src/main/assets']" >> app/build.gradle
+          echo "            java.srcDirs = ['src/main/java', 'src/main/kotlin']" >> app/build.gradle
+          echo "        }" >> app/build.gradle
+          echo "    }" >> app/build.gradle
           echo "}" >> app/build.gradle
           
           # تحميل أداة Gradle 8.2 المتوافقة
           curl -sL https://services.gradle.org/distributions/gradle-8.2-bin.zip -o /tmp/gradle.zip
           unzip -q /tmp/gradle.zip -d "$HOME/gd"
           
-          # بدء البناء والتجميع الفعلي الشامل للأكواد والواجهة الجديدة
+          # إطلاق البناء النهائي الشامل لتجميع الملفات المستهدفة وحقن الأيقونات الجديدة
           "$HOME/gd/gradle-8.2/bin/gradle" clean
           "$HOME/gd/gradle-8.2/bin/gradle" assembleDebug --no-daemon --no-configuration-cache
 
