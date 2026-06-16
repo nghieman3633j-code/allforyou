@@ -46,8 +46,19 @@ jobs:
         run: |
           cd "firebase-update/dr-ali-krim-tlemcen/dr.-ali-krim-main"
           
-          # تنظيف كامل للملفات المؤقتة القديمة
+          # تنظيف كامل للملفات المؤقتة المتعارضة
           rm -f build.gradle.kts settings.gradle.kts app/build.gradle.kts app/build.gradle
+          
+          # البحث البرمجي التلقائي عن المسار الحقيقي لمجلد الموارد (res) لتفادي أخطاء AAPT
+          REAL_RES_DIR=$(find . -type d -name "res" | grep -v "build" | head -n 1 | sed 's|^\./||')
+          REAL_MANIFEST=$(find . -name "AndroidManifest.xml" | grep -v "build" | head -n 1 | sed 's|^\./||')
+          REAL_ASSETS=$(find . -type d -name "assets" | grep -v "build" | head -n 1 | sed 's|^\./||')
+          
+          # إذا لم يعثر على مجلد assets الافتراضي نضع مساراً احتياطياً
+          if [ -z "$REAL_ASSETS" ]; then REAL_ASSETS="app/src/main/assets"; fi
+          
+          echo "المسار المكتشف للموارد: $REAL_RES_DIR"
+          echo "المسار المكتشف للمانيفست: $REAL_MANIFEST"
           
           # 1. إنشاء ملف settings.gradle القياسي المستقر
           echo "pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }" > settings.gradle
@@ -58,7 +69,7 @@ jobs:
           # 2. إنشاء ملف build.gradle الرئيسي
           echo "buildscript { repositories { google(); mavenCentral() }; dependencies { classpath 'com.android.tools.build:gradle:8.2.0'; classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.20' } }" > build.gradle
           
-          # 3. إنشاء ملف بناء التطبيق الداخلي app/build.gradle (بالتوجيه النسخي الصحيح والمباشر لمنع التكرار)
+          # 3. إنشاء ملف بناء التطبيق الداخلي app/build.gradle وحقن المسارات المكتشفة ديناميكياً
           echo "apply plugin: 'com.android.application'" > app/build.gradle
           echo "apply plugin: 'org.jetbrains.kotlin.android'" >> app/build.gradle
           echo "android {" >> app/build.gradle
@@ -73,10 +84,10 @@ jobs:
           echo "    }" >> app/build.gradle
           echo "    sourceSets {" >> app/build.gradle
           echo "        main {" >> app/build.gradle
-          echo "            manifest.srcFile 'src/main/AndroidManifest.xml'" >> app/build.gradle
-          echo "            res.srcDirs = ['src/main/res']" >> app/build.gradle
-          echo "            assets.srcDirs = ['src/main/assets']" >> app/build.gradle
-          echo "            java.srcDirs = ['src/main/java', 'src/main/kotlin']" >> app/build.gradle
+          echo "            manifest.srcFile '${REAL_MANIFEST}'" >> app/build.gradle
+          echo "            res.srcDirs = ['${REAL_RES_DIR}']" >> app/build.gradle
+          echo "            assets.srcDirs = ['${REAL_ASSETS}']" >> app/build.gradle
+          echo "            java.srcDirs = ['app/src/main/java', 'app/src/main/kotlin']" >> app/build.gradle
           echo "        }" >> app/build.gradle
           echo "    }" >> app/build.gradle
           echo "}" >> app/build.gradle
@@ -85,7 +96,7 @@ jobs:
           curl -sL https://services.gradle.org/distributions/gradle-8.2-bin.zip -o /tmp/gradle.zip
           unzip -q /tmp/gradle.zip -d "$HOME/gd"
           
-          # تشغيل التجميع النهائي المستقر
+          # إطلاق البناء النظيف النهائي والتجميع الشامل
           "$HOME/gd/gradle-8.2/bin/gradle" clean
           "$HOME/gd/gradle-8.2/bin/gradle" assembleDebug --no-daemon --no-configuration-cache
 
