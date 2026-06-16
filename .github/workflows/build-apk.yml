@@ -55,10 +55,10 @@ jobs:
           echo "rootProject.name = 'arabic-tlemcen-apk'" >> settings.gradle
           echo "include ':app'" >> settings.gradle
           
-          # 2. إنشاء ملف build.gradle الرئيسي الموجه للمستودعات المركزية
+          # 2. إنشاء ملف build.gradle الرئيسي
           echo "buildscript { repositories { google(); mavenCentral() }; dependencies { classpath 'com.android.tools.build:gradle:8.2.0'; classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.20' } }" > build.gradle
           
-          # 3. إنشاء ملف بناء التطبيق الداخلي app/build.gradle بتثبيت المسارات القياسية الصحيحة للمشروع
+          # 3. إنشاء ملف بناء التطبيق الداخلي app/build.gradle مع تصحيح الرؤية العكسية للمجلدات (../)
           echo "apply plugin: 'com.android.application'" > app/build.gradle
           echo "apply plugin: 'org.jetbrains.kotlin.android'" >> app/build.gradle
           echo "android {" >> app/build.gradle
@@ -74,9 +74,9 @@ jobs:
           echo "    sourceSets {" >> app/build.gradle
           echo "        main {" >> app/build.gradle
           echo "            manifest.srcFile 'src/main/AndroidManifest.xml'" >> app/build.gradle
-          echo "            res.srcDirs = ['src/main/res']" >> app/build.gradle
-          echo "            assets.srcDirs = ['src/main/assets']" >> app/build.gradle
-          echo "            java.srcDirs = ['src/main/java', 'src/main/kotlin']" >> app/build.gradle
+          echo "            res.srcDirs = ['../app/src/main/res', 'src/main/res']" >> app/build.gradle
+          echo "            assets.srcDirs = ['../app/src/main/assets', 'src/main/assets']" >> app/build.gradle
+          echo "            java.srcDirs = ['../app/src/main/java', 'src/main/java']" >> app/build.gradle
           echo "        }" >> app/build.gradle
           echo "    }" >> app/build.gradle
           echo "}" >> app/build.gradle
