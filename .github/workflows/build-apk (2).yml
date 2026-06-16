@@ -33,7 +33,7 @@ jobs:
             DIR_PATH=$(dirname "$FILE_PATH")
             base64 -d "$FILE_PATH" > "$DIR_PATH/debug.keystore"
           else
-            echo "الملف غير موجود، سيتم إنشاء مفتاح افتراضي"
+            echo "المفتاح غير موجود، سيتم إنشاء مفتاح افتراضي"
             keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
           fi
 
@@ -49,8 +49,16 @@ jobs:
 
       - name: Download Gradle 9.3.1 and build
         run: |
+          # البحث عن المجلد الذي يحتوي على ملف إعدادات Gradle
+          GRADLE_ROOT=$(find . -name "settings.gradle" -o -name "settings.gradle.kts" -print -quit | xargs dirname)
+          echo "تم العثور على مشروع Gradle في المسار: $GRADLE_ROOT"
+          
+          # تحميل أداة Gradle
           curl -sL https://services.gradle.org/distributions/gradle-9.3.1-bin.zip -o /tmp/gradle.zip
           unzip -q /tmp/gradle.zip -d "$HOME/gd"
+          
+          # الانتقال لمجلد المشروع وتشغيل البناء
+          cd "$GRADLE_ROOT"
           "$HOME/gd/gradle-9.3.1/bin/gradle" --version
           "$HOME/gd/gradle-9.3.1/bin/gradle" assembleDebug --no-configuration-cache --stacktrace
 
