@@ -44,21 +44,11 @@ jobs:
 
       - name: Download Gradle and build
         run: |
-          # الانتقال للمجلد العميق للمشروع
           cd "firebase-update/dr-ali-krim-tlemcen/dr.-ali-krim-main"
           
-          # إجبار النظام على استخدام مستودعات جوجل لحل مشكلة الإضافات المفقودة (Plugin 9.1.1)
-          if [ -f "settings.gradle.kts" ]; then
-            echo 'pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }' | cat - settings.gradle.kts > temp && mv temp settings.gradle.kts
-          elif [ -f "settings.gradle" ]; then
-            echo 'pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }' | cat - settings.gradle > temp && mv temp settings.gradle
-          fi
-
-          # تحميل أداة Gradle المتوافقة
           curl -sL https://services.gradle.org/distributions/gradle-8.5-bin.zip -o /tmp/gradle.zip
           unzip -q /tmp/gradle.zip -d "$HOME/gd"
           
-          # تشغيل البناء الفعلي للتطبيق مع المستودعات الجديدة
           "$HOME/gd/gradle-8.5/bin/gradle" assembleDebug --no-configuration-cache --stacktrace
 
       - name: Upload APK
