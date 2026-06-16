@@ -28,7 +28,6 @@ jobs:
 
       - name: Decode debug keystore
         run: |
-          # فك تشفير المفتاح مباشرة داخل المجلد العميق المكتشف
           TARGET_DIR="firebase-update/dr-ali-krim-tlemcen/dr.-ali-krim-main"
           if [ -f "$TARGET_DIR/debug.keystore.base64" ]; then
             base64 -d "$TARGET_DIR/debug.keystore.base64" > "$TARGET_DIR/debug.keystore"
@@ -39,21 +38,27 @@ jobs:
 
       - name: Decode google-services.json (Firebase)
         run: |
-          # وضع ملف الفيسبوك في مجلد app العميق الصحيح
           TARGET_DIR="firebase-update/dr-ali-krim-tlemcen/dr.-ali-krim-main/app"
           mkdir -p "$TARGET_DIR"
           echo "${{ secrets.GOOGLE_SERVICES_JSON }}" | base64 -d > "$TARGET_DIR/google-services.json"
 
       - name: Download Gradle and build
         run: |
-          # الانتقال للمجلد العميق الحقيقي للمشروع
+          # الانتقال للمجلد العميق للمشروع
           cd "firebase-update/dr-ali-krim-tlemcen/dr.-ali-krim-main"
           
-          # تحميل أداة Gradle المتوافقة (تلقائياً) أو استخدام المثبتة
+          # إجبار النظام على استخدام مستودعات جوجل لحل مشكلة الإضافات المفقودة (Plugin 9.1.1)
+          if [ -f "settings.gradle.kts" ]; then
+            echo 'pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }' | cat - settings.gradle.kts > temp && mv temp settings.gradle.kts
+          elif [ -f "settings.gradle" ]; then
+            echo 'pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }' | cat - settings.gradle > temp && mv temp settings.gradle
+          fi
+
+          # تحميل أداة Gradle المتوافقة
           curl -sL https://services.gradle.org/distributions/gradle-8.5-bin.zip -o /tmp/gradle.zip
           unzip -q /tmp/gradle.zip -d "$HOME/gd"
           
-          # تشغيل البناء الفعلي للتطبيق
+          # تشغيل البناء الفعلي للتطبيق مع المستودعات الجديدة
           "$HOME/gd/gradle-8.5/bin/gradle" assembleDebug --no-configuration-cache --stacktrace
 
       - name: Upload APK
