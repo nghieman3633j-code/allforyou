@@ -1,23 +1,53 @@
-- name: Download Gradle and build Full APK
+name: Build Arabic Tlemcen APK
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install SDK components
+        run: |
+          yes | sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+
+      - name: Decode debug keystore
+        run: |
+          TARGET_DIR="firebase-update/dr-ali-krim-tlemcen/dr.-ali-krim-main"
+          if [ -f "$TARGET_DIR/debug.keystore.base64" ]; then
+            base64 -d "$TARGET_DIR/debug.keystore.base64" > "$TARGET_DIR/debug.keystore"
+          else
+            echo "المفتاح غير موجود، سيتم إنشاء مفتاح افتراضي"
+            keytool -genkey -v -keystore "$TARGET_DIR/debug.keystore" -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+          fi
+
+      - name: Decode google-services.json (Firebase)
+        run: |
+          TARGET_DIR="firebase-update/dr-ali-krim-tlemcen/dr.-ali-krim-main/app"
+          mkdir -p "$TARGET_DIR"
+          echo "${{ secrets.GOOGLE_SERVICES_JSON }}" | base64 -d > "$TARGET_DIR/google-services.json"
+
+      - name: Download Gradle and build Full APK
         run: |
           cd "firebase-update/dr-ali-krim-tlemcen/dr.-ali-krim-main"
           
           # تنظيف كامل للملفات المؤقتة المتعارضة
           rm -f build.gradle.kts settings.gradle.kts app/build.gradle.kts app/build.gradle
-          
-          # البحث البرمجي التلقائي مع تجنب حساسية حالة الأحرف لتفادي أخطاء AAPT
-          REAL_RES_DIR=$(find . -type d -iname "res" | grep -v "build" | head -n 1 | sed 's|^\./||')
-          REAL_MANIFEST=$(find . -iname "AndroidManifest.xml" | grep -v "build" | head -n 1 | sed 's|^\./||')
-          REAL_ASSETS=$(find . -type d -iname "assets" | grep -v "build" | head -n 1 | sed 's|^\./||')
-          
-          # وضع مسارات افتراضية آمنة في حال فشل البحث التلقائي لمنع أخطاء (Path may not be null)
-          if [ -z "$REAL_RES_DIR" ]; then REAL_RES_DIR="app/src/main/res"; fi
-          if [ -z "$REAL_MANIFEST" ]; then REAL_MANIFEST="app/src/main/AndroidManifest.xml"; fi
-          if [ -z "$REAL_ASSETS" ]; then REAL_ASSETS="app/src/main/assets"; fi
-          
-          echo "المسار المكتشف للموارد: $REAL_RES_DIR"
-          echo "المسار المكتشف للمانيفست: $REAL_MANIFEST"
-          echo "المسار المكتشف للأصول: $REAL_ASSETS"
           
           # 1. إنشاء ملف settings.gradle القياسي المستقر
           echo "pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }" > settings.gradle
@@ -25,10 +55,10 @@
           echo "rootProject.name = 'arabic-tlemcen-apk'" >> settings.gradle
           echo "include ':app'" >> settings.gradle
           
-          # 2. إنشاء ملف build.gradle الرئيسي
+          # 2. إنشاء ملف build.gradle الرئيسي الموجه للمستودعات المركزية
           echo "buildscript { repositories { google(); mavenCentral() }; dependencies { classpath 'com.android.tools.build:gradle:8.2.0'; classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.20' } }" > build.gradle
           
-          # 3. إنشاء ملف بناء التطبيق الداخلي app/build.gradle وحقن المسارات المكتشفة بربطها بمجلد الجذر
+          # 3. إنشاء ملف بناء التطبيق الداخلي app/build.gradle بتثبيت المسارات القياسية الصحيحة للمشروع
           echo "apply plugin: 'com.android.application'" > app/build.gradle
           echo "apply plugin: 'org.jetbrains.kotlin.android'" >> app/build.gradle
           echo "android {" >> app/build.gradle
@@ -43,18 +73,25 @@
           echo "    }" >> app/build.gradle
           echo "    sourceSets {" >> app/build.gradle
           echo "        main {" >> app/build.gradle
-          echo "            manifest.srcFile rootProject.file('${REAL_MANIFEST}')" >> app/build.gradle
-          echo "            res.srcDirs = [rootProject.file('${REAL_RES_DIR}')]" >> app/build.gradle
-          echo "            assets.srcDirs = [rootProject.file('${REAL_ASSETS}')]" >> app/build.gradle
-          echo "            java.srcDirs = [rootProject.file('app/src/main/java'), rootProject.file('app/src/main/kotlin')]" >> app/build.gradle
+          echo "            manifest.srcFile 'src/main/AndroidManifest.xml'" >> app/build.gradle
+          echo "            res.srcDirs = ['src/main/res']" >> app/build.gradle
+          echo "            assets.srcDirs = ['src/main/assets']" >> app/build.gradle
+          echo "            java.srcDirs = ['src/main/java', 'src/main/kotlin']" >> app/build.gradle
           echo "        }" >> app/build.gradle
           echo "    }" >> app/build.gradle
           echo "}" >> app/build.gradle
           
-          # تحميل أداة Gradle 8.2
+          # تحميل أداة Gradle 8.2 المستقرة
           curl -sL https://services.gradle.org/distributions/gradle-8.2-bin.zip -o /tmp/gradle.zip
           unzip -q /tmp/gradle.zip -d "$HOME/gd"
           
-          # إطلاق البناء النظيف النهائي والتجميع الشامل
+          # إطلاق البناء النهائي وتجميع التطبيق الحقيقي بالكامل
           "$HOME/gd/gradle-8.2/bin/gradle" clean
           "$HOME/gd/gradle-8.2/bin/gradle" assembleDebug --no-daemon --no-configuration-cache
+
+      - name: Upload Real APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: arabic-tlemcen-apk
+          path: "**/build/outputs/apk/debug/*.apk"
+          if-no-files-found: error
