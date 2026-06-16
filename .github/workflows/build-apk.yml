@@ -1,4 +1,4 @@
-name: Build Arabic Tlemcen APK
+name: Build Arabic Tlemcen APK (Native)
 
 on:
   push:
@@ -13,38 +13,28 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. جلب الكود المصدري للمشروع
+      # 1. جلب الكود
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. إعداد لغة جافا (مطلوبة لبناء أندرويد)
+      # 2. إعداد لغة جافا
       - name: Set up JDK
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '17'
 
-      # 3. إعداد بيئة فلوتر
-      - name: Set up Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          channel: 'stable'
+      # 3. إعداد أداة Gradle وضبط صلاحيات تشغيل gradlew تلقائياً
+      - name: Setup Gradle and Fix Permissions
+        uses: gradle/actions/setup-gradle@v3
 
-      # 4. جلب حزم ومكتبات فلوتر
-      - name: Install dependencies
-        run: flutter pub get
+      # 4. بناء التطبيق باستخدام Gradle المباشر
+      - name: Build with Gradle
+        run: ./gradlew assembleRelease
 
-      # 5. حل المشكلة: إعطاء صلاحية التشغيل لملف gradlew داخل مجلد android
-      - name: Make Gradlew Executable
-        run: set -e; chmod +x android/gradlew
-
-      # 6. بناء ملف الـ APK
-      - name: Build APK
-        run: flutter build apk --release
-
-      # 7. حفظ ملف الـ APK الناتج لكي تتمكن من تحميله
+      # 5. حفظ ملف الـ APK الناتج
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: tlemcen-app-release-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
+          name: tlemcen-native-apk
+          path: app/build/outputs/apk/release/app-release.apk
