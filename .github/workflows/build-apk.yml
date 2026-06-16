@@ -32,60 +32,123 @@ jobs:
           if [ -f "$TARGET_DIR/debug.keystore.base64" ]; then
             base64 -d "$TARGET_DIR/debug.keystore.base64" > "$TARGET_DIR/debug.keystore"
           else
-            echo "Ø§Ù„Ù…ÙØªØ§Ø­ ØºÙŠØ± Ù…ÙˆØ¬ÙˆØ¯ØŒ Ø³ÙŠØªÙ… Ø¥Ù†Ø´Ø§Ø¡ Ù…ÙØªØ§Ø­ Ø§ÙØªØ±Ø§Ø¶ÙŠ"
+            echo "المفتاح غير موجود، سيتم إنشاء مفتاح افتراضي"
             keytool -genkey -v -keystore "$TARGET_DIR/debug.keystore" -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
           fi
 
       - name: Decode google-services.json (Firebase)
         run: |
-          # Ø­Ù‚Ù† Ù…Ù„Ù Ø§Ù„ÙØ§ÙŠØ±Ø¨ÙŠØ² Ù…Ø¨Ø§Ø´Ø±Ø© ÙÙŠ Ù…ÙƒØ§Ù† Ø§Ù„Ù…ÙˆØ§Ø±Ø¯ Ø§Ù„Ù…ØªÙˆÙ‚Ø¹
           TARGET_DIR="firebase-update/dr-ali-krim-tlemcen/dr.-ali-krim-main"
           mkdir -p "$TARGET_DIR"
           echo "${{ secrets.GOOGLE_SERVICES_JSON }}" | base64 -d > "$TARGET_DIR/google-services.json"
 
+      - name: Create AndroidManifest.xml and resource directories
+        run: |
+          TARGET_DIR="firebase-update/dr-ali-krim-tlemcen/dr.-ali-krim-main"
+          mkdir -p "$TARGET_DIR/src/main/res/values"
+          mkdir -p "$TARGET_DIR/src/main/assets"
+          mkdir -p "$TARGET_DIR/src/main/java/com/arabic/tlemcen/app"
+          
+          cat <<EOF > "$TARGET_DIR/src/main/AndroidManifest.xml"
+          <?xml version="1.0" encoding="utf-8"?>
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+              package="com.arabic.tlemcen.app">
+              <application
+                  android:allowBackup="true"
+                  android:icon="@mipmap/ic_launcher"
+                  android:label="@string/app_name"
+                  android:roundIcon="@mipmap/ic_launcher_round"
+                  android:supportsRtl="true"
+                  android:theme="@style/Theme.AppCompat.Light.NoActionBar">
+                  <activity android:name=".MainActivity"
+                      android:exported="true">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN" />
+                          <category android:name="android.intent.category.LAUNCHER" />
+                      </intent-filter>
+                  </activity>
+              </application>
+          </manifest>
+          EOF
+          
+          cat <<EOF > "$TARGET_DIR/src/main/res/values/strings.xml"
+          <?xml version="1.0" encoding="utf-8"?>
+          <resources>
+              <string name="app_name">Arabic Tlemcen App</string>
+          </resources>
+          EOF
+          
+          cat <<EOF > "$TARGET_DIR/src/main/res/values/styles.xml"
+          <?xml version="1.0" encoding="utf-8"?>
+          <resources>
+              <style name="Theme.AppCompat.Light.NoActionBar" parent="Theme.AppCompat.Light.DarkActionBar" />
+          </resources>
+          EOF
+          
+          cat <<EOF > "$TARGET_DIR/src/main/java/com/arabic/tlemcen/app/MainActivity.java"
+          package com.arabic.tlemcen.app;
+          import android.os.Bundle;
+          import androidx.appcompat.app.AppCompatActivity;
+          public class MainActivity extends AppCompatActivity {
+              @Override
+              protected void onCreate(Bundle savedInstanceState) {
+                  super.onCreate(savedInstanceState);
+              }
+          }
+          EOF
+
       - name: Download Gradle and build Full APK
         run: |
           cd "firebase-update/dr-ali-krim-tlemcen/dr.-ali-krim-main"
-          
-          # 1. ØªØ·Ù‡ÙŠØ± ÙˆØ­Ø°Ù Ø§Ù„Ù…Ø¬Ù„Ø¯ Ø§Ù„ÙØ±Ø¹ÙŠ 'app' ÙˆÙ…Ù„ÙØ§Øª Ø§Ù„ÙƒÙˆØªÙ„Ù† Ù„Ø¥Ù„ØºØ§Ø¡ Ø§Ù„ØªØ´Ø§Ø¨Ùƒ ÙƒÙ„ÙŠØ§Ù‹
           rm -rf build.gradle.kts settings.gradle.kts app/
           
-          # 2. Ø¥Ù†Ø´Ø§Ø¡ Ù…Ù„Ù settings.gradle Ù…Ø³Ø·Ø­ (Ø¨Ø¯ÙˆÙ† Ø¥Ø¯Ø±Ø§Ø¬ Ù…Ø¬Ù„Ø¯ ÙØ±Ø¹ÙŠ)
-          echo "pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }" > settings.gradle
-          echo "dependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS); repositories { google(); mavenCentral() } }" >> settings.gradle
-          echo "rootProject.name = 'arabic-tlemcen-apk'" >> settings.gradle
+          cat <<EOF > settings.gradle
+          pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }
+          dependencyResolutionManagement { 
+              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+              repositories { google(); mavenCentral() } 
+          }
+          rootProject.name = 'arabic-tlemcen-apk'
+          EOF
           
-          # 3. Ø¨Ù†Ø§Ø¡ Ù…Ù„Ù Ø§Ù„ØªØ¬Ù…ÙŠØ¹ Ø§Ù„Ø±Ø¦ÙŠØ³ÙŠ Ù…Ø¨Ø§Ø´Ø±Ø© ÙÙŠ Ø¬Ø°Ø± Ø§Ù„Ù…Ø´Ø±ÙˆØ¹ Ù„Ø±Ø¤ÙŠØ© Ø§Ù„Ù…ÙˆØ§Ø±Ø¯ ÙÙˆØ±Ø§Ù‹
-          echo "apply plugin: 'com.android.application'" > build.gradle
-          echo "apply plugin: 'org.jetbrains.kotlin.android'" >> build.gradle
+          cat <<EOF > build.gradle
+          buildscript {
+              repositories { google(); mavenCentral() }
+              dependencies {
+                  classpath 'com.android.tools.build:gradle:8.2.0'
+                  classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.20'
+              }
+          }
+          apply plugin: 'com.android.application'
+          apply plugin: 'org.jetbrains.kotlin.android'
+          android {
+              namespace 'com.arabic.tlemcen.app'
+              compileSdk 34
+              defaultConfig {
+                  applicationId 'com.arabic.tlemcen.app'
+                  minSdk 24
+                  targetSdk 34
+                  versionCode 1
+                  versionName '1.0'
+              }
+              sourceSets {
+                  main {
+                      manifest.srcFile 'src/main/AndroidManifest.xml'
+                      res.srcDirs = ['src/main/res']
+                      assets.srcDirs = ['src/main/assets']
+                      java.srcDirs = ['src/main/java']
+                  }
+              }
+          }
+          dependencies {
+              implementation 'androidx.appcompat:appcompat:1.6.1'
+              implementation 'com.google.android.material:material:1.10.0'
+              implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+          }
+          EOF
           
-          echo "buildscript { repositories { google(); mavenCentral() }; dependencies { classpath 'com.android.tools.build:gradle:8.2.0'; classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.20' } }" >> build.gradle
-          
-          echo "android {" >> build.gradle
-          echo "    namespace 'com.arabic.tlemcen.app'" >> build.gradle
-          echo "    compileSdk 34" >> build.gradle
-          echo "    defaultConfig {" >> build.gradle
-          echo "        applicationId 'com.arabic.tlemcen.app'" >> build.gradle
-          echo "        minSdk 24" >> build.gradle
-          echo "        targetSdk 34" >> build.gradle
-          echo "        versionCode 1" >> build.gradle
-          echo "        versionName '1.0'" >> build.gradle
-          echo "    }" >> build.gradle
-          echo "    sourceSets {" >> build.gradle
-          echo "        main {" >> build.gradle
-          echo "            manifest.srcFile 'src/main/AndroidManifest.xml'" >> build.gradle
-          echo "            res.srcDirs = ['src/main/res']" >> build.gradle
-          echo "            assets.srcDirs = ['src/main/assets']" >> build.gradle
-          echo "            java.srcDirs = ['src/main/java', 'src/main/kotlin']" >> build.gradle
-          echo "        }" >> build.gradle
-          echo "    }" >> build.gradle
-          echo "}" >> build.gradle
-          
-          # ØªØ­Ù…ÙŠÙ„ Ø£Ø¯Ø§Ø© Gradle 8.2 Ø§Ù„Ù…Ø³ØªÙ‚Ø±Ø©
           curl -sL https://services.gradle.org/distributions/gradle-8.2-bin.zip -o /tmp/gradle.zip
           unzip -q /tmp/gradle.zip -d "$HOME/gd"
-          
-          # ØªØ´ØºÙŠÙ„ Ø§Ù„ØªØ¬Ù…ÙŠØ¹ Ø§Ù„Ù…Ø³Ø·Ø­ Ø§Ù„Ù†Ø¸ÙŠÙ
           "$HOME/gd/gradle-8.2/bin/gradle" clean
           "$HOME/gd/gradle-8.2/bin/gradle" assembleDebug --no-daemon --no-configuration-cache
 
@@ -95,3 +158,4 @@ jobs:
           name: arabic-tlemcen-apk
           path: "**/outputs/apk/debug/*.apk"
           if-no-files-found: error
+
