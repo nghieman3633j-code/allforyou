@@ -2,45 +2,49 @@ name: Build Arabic Tlemcen APK
 
 on:
   push:
-    branches: [ "main" ]
-  workflow_dispatch:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      # 1. جلب الكود المصدري للمشروع
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+      # 2. إعداد لغة جافا (مطلوبة لبناء أندرويد)
+      - name: Set up JDK
         uses: actions/setup-java@v4
         with:
-          distribution: temurin
-          java-version: "17"
+          distribution: 'zulu'
+          java-version: '17'
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+      # 3. إعداد بيئة فلوتر
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
 
-      - name: Install SDK components
-        run: yes | sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+      # 4. جلب حزم ومكتبات فلوتر
+      - name: Install dependencies
+        run: flutter pub get
 
-      - name: Decode google-services.json
-        run: |
-          TARGET_DIR="firebase-update/dr-ali-krim-tlemcen/dr.-ali-krim-main"
-          mkdir -p "$TARGET_DIR"
-          echo "${{ secrets.GOOGLE_SERVICES_JSON }}" | base64 -d > "$TARGET_DIR/google-services.json"
+      # 5. حل المشكلة: إعطاء صلاحية التشغيل لملف gradlew داخل مجلد android
+      - name: Make Gradlew Executable
+        run: set -e; chmod +x android/gradlew
 
+      # 6. بناء ملف الـ APK
       - name: Build APK
-        run: |
-          set -e
-          cd "firebase-update/dr-ali-krim-tlemcen/dr.-ali-krim-main"
-          chmod +x gradlew
-          ./gradlew clean assembleDebug --no-daemon --stacktrace
+        run: flutter build apk --release
 
-      - name: Upload APK
+      # 7. حفظ ملف الـ APK الناتج لكي تتمكن من تحميله
+      - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: arabic-tlemcen-apk
-          path: "**/outputs/apk/debug/*.apk"
-          if-no-files-found: error
+          name: tlemcen-app-release-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
