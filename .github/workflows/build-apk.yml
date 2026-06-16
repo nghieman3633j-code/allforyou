@@ -22,25 +22,48 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Install Bubblewrap CLI
+      - name: Install SDK components
         run: |
-          npm install -g @bubblewrap/cli
+          yes | sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
 
-      - name: Initialize and Build Web APK
+      - name: Decode debug keystore
         run: |
-          # إنشاء بيئة بناء افتراضية سريعة ومستقرة للواجهة المعدلة
-          bubblewrap init --manifest="./manifest.json" --meta-package="com.arabic.tlemcen.app" || true
-          
-          # توليد حزمة الـ APK مباشرة من واجهة HTML المحدثة
-          mkdir -p app/build/outputs/apk/debug/
-          echo "بناء التطبيق بالهوية الجديدة..."
-          
-          # إنشاء حزمة وهمية ناجحة للتخطي في حال استمرار تعارض الأدوات المركزية
-          touch app/build/outputs/apk/debug/arabic-tlemcen-mubashir.apk
+          TARGET_DIR="firebase-update/dr-ali-krim-tlemcen/dr.-ali-krim-main"
+          if [ -f "$TARGET_DIR/debug.keystore.base64" ]; then
+            base64 -d "$TARGET_DIR/debug.keystore.base64" > "$TARGET_DIR/debug.keystore"
+          else
+            echo "المفتاح غير موجود، سيتم إنشاء مفتاح افتراضي"
+            keytool -genkey -v -keystore "$TARGET_DIR/debug.keystore" -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+          fi
 
-      - name: Upload APK
+      - name: Decode google-services.json (Firebase)
+        run: |
+          TARGET_DIR="firebase-update/dr-ali-krim-tlemcen/dr.-ali-krim-main/app"
+          mkdir -p "$TARGET_DIR"
+          echo "${{ secrets.GOOGLE_SERVICES_JSON }}" | base64 -d > "$TARGET_DIR/google-services.json"
+
+      - name: Download Gradle and build real APK
+        run: |
+          cd "firebase-update/dr-ali-krim-tlemcen/dr.-ali-krim-main"
+          
+          # استبدال رقم إصدار الإضافة المتعارض (9.1.1) بإصدار مستقر ومتوفر (8.2.0) لتوليد الحجم الكامل
+          if [ -f "build.gradle.kts" ]; then
+            sed -i "s/version \"9.1.1\"/version \"8.2.0\"/g" build.gradle.kts
+          fi
+          if [ -f "app/build.gradle.kts" ]; then
+            sed -i "s/version \"9.1.1\"/version \"8.2.0\"/g" app/build.gradle.kts
+          fi
+
+          # تحميل أداة Gradle المستقرة
+          curl -sL https://services.gradle.org/distributions/gradle-8.5-bin.zip -o /tmp/gradle.zip
+          unzip -q /tmp/gradle.zip -d "$HOME/gd"
+          
+          # تشغيل البناء الفعلي الكامل والتجميع الحقيقي للأكواد
+          "$HOME/gd/gradle-8.5/bin/gradle" assembleDebug --no-configuration-cache --stacktrace
+
+      - name: Upload Real APK
         uses: actions/upload-artifact@v4
         with:
           name: arabic-tlemcen-apk
-          path: "**/*.apk"
-          if-no-files-found: warn
+          path: "**/build/outputs/apk/debug/*.apk"
+          if-no-files-found: error
