@@ -13,29 +13,48 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. جلب الكود المصدري للمشروع من جيتهاب
+      # 1. جلب الكود المصدري
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. إعداد بيئة جافا (مطلوبة لبناء تطبيقات أندرويد)
+      # 2. إعداد لغة جافا
       - name: Set up JDK
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '17'
 
-      # 3. حل مشكلة الصلاحيات وموقع الملف تلقائياً
+      # 3. خطوة كشف الملفات (لمعرفة أين يختفي ملف gradlew)
+      - name: Locate gradlew file
+        run: |
+          echo "=== عرض المجلدات الحالية في المشروع ==="
+          ls -R . | grep -E "android|gradlew" || true
+          echo "=== البحث عن مسار ملف gradlew الدقيق ==="
+          find . -name "gradlew"
+
+      # 4. إعداد أداة Gradle وضبط الصلاحيات
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
 
-      # 4. بناء التطبيق مع تحديد المجلد الصحيح (android) الذي يحتوي على الـ gradlew
-      - name: Build with Gradle
-        run: ./gradlew assembleRelease
-        working-directory: android
+      # 5. محاولة البناء الذكي (يبحث عن الملف وينفذه أينما كان)
+      - name: Smart Build APK
+        run: |
+          GRADLEW_PATH=$(find . -name "gradlew" | head -n 1)
+          if [ -z "$GRADLEW_PATH" ]; then
+            echo "خطأ قاتل: لم يتم العثور على ملف gradlew في أي مكان بالمشروع!"
+            echo "يرجى التأكد من أنك قمت بتوليد منصة الأندرويد في مشروعك قبل الرفع."
+            exit 1
+          fi
+          
+          # الدخول إلى المجلد الذي يحتوي على الملف وتشغيله
+          DIR_PATH=$(dirname "$GRADLEW_PATH")
+          echo "تم العثور على gradlew في المجلد: $DIR_PATH"
+          cd "$DIR_PATH"
+          ./gradlew assembleRelease
 
-      # 5. حفظ واستخراج ملف الـ APK بعد انتهاء البناء بنجاح
+      # 6. رفع ملف الـ APK الناتج (يبحث عنه السيرفر تلقائياً ويرفعه)
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: tlemcen-app-release
-          path: android/app/build/outputs/apk/release/app-release.apk
+          name: tlemcen-app-apk
+          path: "**/build/outputs/apk/release/*.apk"
