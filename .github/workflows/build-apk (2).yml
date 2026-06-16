@@ -24,54 +24,41 @@ jobs:
 
       - name: Install SDK components
         run: |
-          yes | sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0"
+          yes | sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
 
       - name: Decode debug keystore
         run: |
-          FILE_PATH=$(find . -name "debug.keystore.base64" -print -quit)
-          if [ -n "$FILE_PATH" ]; then
-            DIR_PATH=$(dirname "$FILE_PATH")
-            base64 -d "$FILE_PATH" > "$DIR_PATH/debug.keystore"
+          # فك تشفير المفتاح مباشرة داخل المجلد العميق المكتشف
+          TARGET_DIR="firebase-update/dr-ali-krim-tlemcen/dr.-ali-krim-main"
+          if [ -f "$TARGET_DIR/debug.keystore.base64" ]; then
+            base64 -d "$TARGET_DIR/debug.keystore.base64" > "$TARGET_DIR/debug.keystore"
           else
             echo "المفتاح غير موجود، سيتم إنشاء مفتاح افتراضي"
-            keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+            keytool -genkey -v -keystore "$TARGET_DIR/debug.keystore" -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
           fi
 
       - name: Decode google-services.json (Firebase)
         run: |
-          TARGET_DIR=$(find . -type d -name "app" -not -path "*/build/*" -print -quit)
-          if [ -n "$TARGET_DIR" ]; then
-            echo "${{ secrets.GOOGLE_SERVICES_JSON }}" | base64 -d > "$TARGET_DIR/google-services.json"
-          else
-            mkdir -p app
-            echo "${{ secrets.GOOGLE_SERVICES_JSON }}" | base64 -d > app/google-services.json
-          fi
+          # وضع ملف الفيسبوك في مجلد app العميق الصحيح
+          TARGET_DIR="firebase-update/dr-ali-krim-tlemcen/dr.-ali-krim-main/app"
+          mkdir -p "$TARGET_DIR"
+          echo "${{ secrets.GOOGLE_SERVICES_JSON }}" | base64 -d > "$TARGET_DIR/google-services.json"
 
-      - name: Download Gradle 9.3.1 and build
+      - name: Download Gradle and build
         run: |
-          # فحص إذا كان المجلد يحتوي على إعدادات Gradle، وإذا لم يجدها يقوم بتهيئتها
-          if [ ! -f "settings.gradle" ] && [ ! -f "settings.gradle.kts" ]; then
-            echo "تهيئة مشروع أندرويد افتراضي..."
-            echo "rootProject.name = 'arabic-tlemcen-apk'" > settings.gradle
-            echo "include ':app'" >> settings.gradle
-            
-            if [ ! -f "build.gradle" ]; then
-              echo "buildscript { repositories { google(); mavenCentral() } }" > build.gradle
-            fi
-          fi
+          # الانتقال للمجلد العميق الحقيقي للمشروع
+          cd "firebase-update/dr-ali-krim-tlemcen/dr.-ali-krim-main"
           
-          # تحميل أداة Gradle
-          curl -sL https://services.gradle.org/distributions/gradle-9.3.1-bin.zip -o /tmp/gradle.zip
+          # تحميل أداة Gradle المتوافقة (تلقائياً) أو استخدام المثبتة
+          curl -sL https://services.gradle.org/distributions/gradle-8.5-bin.zip -o /tmp/gradle.zip
           unzip -q /tmp/gradle.zip -d "$HOME/gd"
           
-          # تشغيل البناء
-          "$HOME/gd/gradle-9.3.1/bin/gradle" --version
-          # محاولة تشغيل البناء، وإذا كان المشروع يعتمد على أداة أخرى كـ Cordova سيتم التنبيه
-          "$HOME/gd/gradle-9.3.1/bin/gradle" assembleDebug --no-configuration-cache --stacktrace || echo "يرجى التحقق من أداة تحويل حزمة الويب الحالية"
+          # تشغيل البناء الفعلي للتطبيق
+          "$HOME/gd/gradle-8.5/bin/gradle" assembleDebug --no-configuration-cache --stacktrace
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: arabic-tlemcen-apk
           path: "**/build/outputs/apk/debug/*.apk"
-          if-no-files-found: warn
+          if-no-files-found: error
